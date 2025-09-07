@@ -7,5 +7,6 @@
   "/products/embedded-systems/firmware-snippet-generator/page": "app/products/embedded-systems/firmware-snippet-generator/page.js",
   "/products/embedded-systems/intelligent-drivers-generator/generate-driver/page": "app/products/embedded-systems/intelligent-drivers-generator/generate-driver/page.js",
   "/products/embedded-systems/intelligent-drivers-generator/page": "app/products/embedded-systems/intelligent-drivers-generator/page.js",
+  "/products/embedded-systems/smart-hal-synthesizer/page": "app/products/embedded-systems/smart-hal-synthesizer/page.js",
   "/products/fpga/hdl-code-generation/page": "app/products/fpga/hdl-code-generation/page.js"
 }

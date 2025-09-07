@@ -1,4 +1,6 @@
-'use client';
+
+"use client";
+
 
 import { useState } from 'react';
 import { ChevronRight, ChevronDown, Settings, Cpu, Zap, HardDrive, Cog, FileText, Download, Play, Check, X, Search, Plus, Minus, RefreshCw, FolderOpen, File, Monitor, Layers, Code2, Terminal, GitBranch, BookOpen, AlertTriangle, Info, Power, CircuitBoard, Network, Radio, Truck, Usb, Globe, Music, Cable, Building, Bluetooth, Wifi, Smartphone, Microchip, Clock } from 'lucide-react';
@@ -15,6 +17,72 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
 export default function DriverGeneratorIDE() {
+  // Reset all selections and settings to initial state
+  const handleReset = () => {
+    setCurrentStep(0);
+    setSelectedMCU('');
+    setSelectedProtocol('');
+    setSelectedPeripheral('');
+    setSettings({});
+    setExpandedSections({ mcu: true });
+    setSearchTerm('');
+    setPeripheralSearchTerm('');
+    setVisitedSteps([0]);
+    setHighestAccessibleStep(0);
+    setValidationErrors([]);
+    setErrorMessages({ mcu: '', protocol: '', peripheral: '' });
+    setDriverSettings({
+      driverName: '',
+      includePath: 'drivers/',
+      codeStyle: '',
+      errorHandling: true,
+      documentation: true,
+      testCode: false,
+      halIntegration: true,
+      optimization: 'balanced',
+      memoryPriority: 'moderate',
+      interruptSupport: false,
+      dmaSupport: false,
+      powerManagement: false,
+      debugSupport: true,
+      threadSafety: false,
+      customPrefix: '',
+      licenseHeader: 'mit'
+    });
+    setAdditionalConfig({
+      customRequirements: '',
+      targetApplication: '',
+      operatingSystem: '',
+      rtosSupport: false,
+      bootloaderIntegration: false,
+      securityFeatures: false,
+      calibrationSupport: false,
+      diagnosticsEnabled: false,
+      firmwareVersion: '1.0.0',
+      compilerToolchain: '',
+      buildSystem: '',
+      testFramework: '',
+      memoryConstraints: {
+        stackSize: '4096',
+        heapSize: '8192',
+        flashUsage: 'moderate'
+      },
+      performanceTargets: {
+        maxResponseTime: '100',
+        throughput: 'standard',
+        powerConsumption: 'balanced'
+      },
+      compliance: {
+        automotive: false,
+        medical: false,
+        aerospace: false,
+        industrial: false
+      },
+      customDefines: [],
+      includePaths: [],
+      linkLibraries: []
+    });
+  };
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedMCU, setSelectedMCU] = useState('');
   const [selectedProtocol, setSelectedProtocol] = useState('');
@@ -460,7 +528,7 @@ export default function DriverGeneratorIDE() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-80 px-4 py-2">
+            <ScrollArea className="h-[32rem] px-4 py-2">
               {/* Search Results Counter */}
               {searchTerm && (
                 <div className="px-4 py-2 bg-[#3e3e3e]/20 border-b border-[#3e3e3e] mb-2">
@@ -495,9 +563,9 @@ export default function DriverGeneratorIDE() {
                         <div className="w-4 h-4 bg-[#00ff41] rounded flex items-center justify-center">
                           <Cpu className="h-2 w-2 text-black" />
                         </div>
-                        <div className="flex-1">
-                          <div className="text-white font-medium text-sm">{suggestion.model}</div>
-                          <div className="text-xs text-gray-400">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-medium text-sm whitespace-normal break-words">{suggestion.model}</div>
+                          <div className="text-xs text-gray-400 whitespace-normal break-words">
                             {suggestion.family} › {suggestion.series}
                           </div>
                         </div>
@@ -514,7 +582,7 @@ export default function DriverGeneratorIDE() {
                 {Object.entries(getFilteredMCUs()).map(([family, data]) => (
                   <div key={family} className="">
                     <div
-                      className="flex items-center gap-3 cursor-pointer hover:bg-[#3e3e3e]/30 p-3 rounded-lg transition-all group"
+                      className="flex items-center gap-4 cursor-pointer hover:bg-[#3e3e3e]/30 p-4 rounded-lg transition-all group min-h-[48px]"
                       onClick={() => toggleSection(family.toLowerCase())}
                     >
                       {expandedSections[family.toLowerCase()] ? 
@@ -534,18 +602,18 @@ export default function DriverGeneratorIDE() {
                       <div className="ml-6 mt-2 space-y-1">
                         {Object.entries(data.series).map(([series, models]) => (
                           <div key={series}>
-                            <div className="flex items-center gap-3 py-2 text-gray-300">
+                            <div className="flex items-center gap-4 py-3 text-gray-300 min-h-[40px]">
                               <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-teal-500 rounded flex items-center justify-center">
                                 <Layers className="h-2 w-2 text-white" />
                               </div>
-                              <span className="text-sm font-medium text-gray-200">{series}</span>
+                              <span className="text-sm font-medium text-gray-200 whitespace-normal break-words">{series}</span>
                               <div className="h-px bg-gradient-to-r from-gray-600 to-transparent flex-1 ml-2" />
                             </div>
-                            <div className="ml-7 space-y-1">
+                            <div className="ml-7 space-y-2">
                               {models.map(model => (
                                 <div
                                   key={model}
-                                  className={`text-sm cursor-pointer hover:bg-[#00ff41]/10 p-2 rounded-md transition-all flex items-center gap-3 group ${
+                                  className={`text-base cursor-pointer hover:bg-[#00ff41]/10 p-3 rounded-lg transition-all flex items-center gap-4 group min-h-[40px] ${
                                     selectedMCU === model 
                                       ? 'bg-gradient-to-r from-[#00ff41]/20 to-[#40e0d0]/10 border-l-2 border-[#00ff41] text-[#00ff41] font-semibold' 
                                       : 'text-gray-300 hover:text-white'
@@ -555,16 +623,16 @@ export default function DriverGeneratorIDE() {
                                     clearErrors();
                                   }}
                                 >
-                                  <div className={`w-4 h-4 rounded flex items-center justify-center ${
+                                  <div className={`w-5 h-5 rounded flex items-center justify-center ${
                                     selectedMCU === model ? 'bg-[#00ff41]' : 'bg-[#3e3e3e] group-hover:bg-[#00ff41]/20'
                                   }`}>
-                                    <Cpu className={`h-2 w-2 ${
+                                    <Cpu className={`h-3 w-3 ${
                                       selectedMCU === model ? 'text-black' : 'text-gray-400 group-hover:text-[#00ff41]'
                                     }`} />
                                   </div>
-                                  <span className="flex-1">{model}</span>
+                                  <span className="flex-1 whitespace-normal break-words">{model}</span>
                                   {selectedMCU === model && (
-                                    <Check className="h-3 w-3 text-[#00ff41]" />
+                                    <Check className="h-4 w-4 text-[#00ff41]" />
                                   )}
                                 </div>
                               ))}
@@ -725,48 +793,7 @@ export default function DriverGeneratorIDE() {
           </div>
         </div>
 
-        {/* Protocol Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <Layers className="h-3 w-3 text-blue-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Protocols</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{protocols.length}</p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <Check className="h-3 w-3 text-green-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Categories</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{categories.length}</p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <Zap className="h-3 w-3 text-purple-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">High Speed</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{protocols.filter(p => p.frequency.includes('MHz') || p.frequency.includes('Gbps')).length}</p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <Radio className="h-3 w-3 text-orange-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Wireless</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{protocols.filter(p => p.category === 'Wireless').length}</p>
-          </div>
-        </div>
+  {/* Protocol Statistics removed as per user request */}
 
         {/* Category Tabs */}
         <div className="space-y-6">
@@ -798,14 +825,14 @@ export default function DriverGeneratorIDE() {
                 </div>
                 
                 {/* Protocols in Category */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 ml-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 ml-4">
                   {categoryProtocols.map((protocol) => {
                     const isSelected = selectedProtocol === protocol.name;
                     
                     return (
                       <Card
                         key={protocol.name}
-                        className={`border cursor-pointer transition-all duration-200 hover:shadow-xl group ${
+                        className={`border cursor-pointer transition-all duration-200 hover:shadow-xl group min-h-[120px] ${
                           isSelected
                             ? `border-[#00ff41] bg-gradient-to-br from-[#00ff41]/10 to-[#40e0d0]/5 shadow-lg ring-1 ring-[#00ff41]/20`
                             : 'border-[#3e3e3e] bg-gradient-to-br from-[#252526] to-[#1e1e1e] hover:border-[#00ff41]/50 hover:shadow-lg'
@@ -815,62 +842,56 @@ export default function DriverGeneratorIDE() {
                           clearErrors();
                         }}
                       >
-                        <CardContent className="p-5">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                                isSelected 
-                                  ? 'bg-gradient-to-br from-[#00ff41] to-[#40e0d0] shadow-lg' 
-                                  : `bg-gradient-to-br ${colors.bg} group-hover:scale-110`
-                              }`}>
-                                <div className={isSelected ? 'text-black' : colors.text}>
-                                  {getProtocolIcon(protocol.icon)}
-                                </div>
-                              </div>
-                              <div>
-                                <h3 className={`font-bold text-lg font-mono transition-colors ${
-                                  isSelected ? 'text-[#00ff41]' : 'text-white group-hover:text-[#00ff41]'
-                                }`}>
-                                  {protocol.name}
-                                </h3>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge className={`text-xs px-2 py-1 ${colors.bg} ${colors.text} border ${colors.border}`}>
-                                    {protocol.category}
-                                  </Badge>
-                                  <Badge className={`text-xs px-2 py-1 ${
-                                    protocol.popularity === 'High' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                                    protocol.popularity === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                                    'bg-gray-500/20 text-gray-400 border-gray-500/30'
-                                  }`}>
-                                    {protocol.popularity}
-                                  </Badge>
-                                </div>
+                        <CardContent className="p-3 flex flex-col gap-2">
+                          <div className="flex items-center gap-2 justify-between">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                              isSelected 
+                                ? 'bg-gradient-to-br from-[#00ff41] to-[#40e0d0] shadow-lg' 
+                                : `bg-gradient-to-br ${colors.bg} group-hover:scale-110`
+                            }`}>
+                              <div className={isSelected ? 'text-black' : colors.text}>
+                                {getProtocolIcon(protocol.icon)}
                               </div>
                             </div>
-                            
+                            <div className="flex-1 min-w-0">
+                              <h3 className={`font-bold text-base font-mono truncate transition-colors ${
+                                isSelected ? 'text-[#00ff41]' : 'text-white group-hover:text-[#00ff41]'
+                              }`}>
+                                {protocol.name}
+                              </h3>
+                              <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                <Badge className={`text-xs px-1 py-0.5 ${colors.bg} ${colors.text} border ${colors.border}`}>
+                                  {protocol.category}
+                                </Badge>
+                                <Badge className={`text-xs px-1 py-0.5 ${
+                                  protocol.popularity === 'High' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                  protocol.popularity === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                  'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                }`}>
+                                  {protocol.popularity}
+                                </Badge>
+                              </div>
+                            </div>
                             {isSelected && (
-                              <div className="w-6 h-6 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-full flex items-center justify-center shadow-lg">
+                              <div className="w-5 h-5 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-full flex items-center justify-center shadow-lg">
                                 <Check className="h-3 w-3 text-black font-bold" />
                               </div>
                             )}
                           </div>
-                          
-                          <p className="text-gray-300 text-sm mb-4 leading-relaxed">{protocol.description}</p>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                          <p className="text-gray-300 text-xs leading-snug line-clamp-2">{protocol.description}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center gap-1">
                               <Zap className="h-3 w-3 text-[#00ff41]" />
                               <span className="text-xs text-gray-400 font-mono">MAX_SPEED</span>
                             </div>
-                            <Badge className={`bg-gradient-to-r from-[#00ff41]/20 to-[#40e0d0]/10 text-[#00ff41] border border-[#00ff41]/30 font-mono text-xs px-3 py-1`}>
+                            <Badge className={`bg-gradient-to-r from-[#00ff41]/20 to-[#40e0d0]/10 text-[#00ff41] border border-[#00ff41]/30 font-mono text-xs px-2 py-0.5`}>
                               {protocol.frequency}
                             </Badge>
                           </div>
-                          
                           {/* Selection Indicator */}
                           {isSelected && (
-                            <div className="mt-4 pt-4 border-t border-[#00ff41]/20">
-                              <div className="flex items-center gap-2">
+                            <div className="mt-2 pt-2 border-t border-[#00ff41]/20">
+                              <div className="flex items-center gap-1">
                                 <div className="w-2 h-2 rounded-full bg-[#00ff41] animate-pulse" />
                                 <span className="text-xs text-[#00ff41] font-mono font-semibold">PROTOCOL_SELECTED</span>
                               </div>
@@ -3041,7 +3062,7 @@ export default function DriverGeneratorIDE() {
                   <Download className="h-3 w-3 mr-1" />
                   export
                 </Button>
-                <Button size="sm" className="bg-[#3e3e3e] border border-[#5e5e5e] text-gray-300 hover:bg-[#4e4e4e] hover:text-[#00ff41] transition-all font-mono text-xs">
+                <Button size="sm" className="bg-[#3e3e3e] border border-[#5e5e5e] text-gray-300 hover:bg-[#4e4e4e] hover:text-[#00ff41] transition-all font-mono text-xs" onClick={handleReset} type="button">
                   <RefreshCw className="h-3 w-3 mr-1" />
                   reset
                 </Button>
