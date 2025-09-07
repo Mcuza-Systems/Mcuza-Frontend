@@ -683,7 +683,7 @@ export default function DriverGeneratorIDE() {
                     Available Communication Interfaces
                   </h4>
                   <div className="flex flex-wrap gap-3">
-                    {['I2C', 'SPI', 'UART', 'CAN', 'USB', 'Ethernet'].map(peripheral => (
+                    {['I2C', 'SPI', 'UART', 'CANxx', 'USB', 'Ethernet'].map(peripheral => (
                       <div key={peripheral} className="bg-gradient-to-r from-[#00ff41]/20 to-[#40e0d0]/10 border border-[#00ff41]/30 rounded-lg px-4 py-2 flex items-center gap-2">
                         <div className="w-4 h-4 bg-[#00ff41] rounded flex items-center justify-center">
                           <Check className="h-2 w-2 text-black" />
@@ -699,7 +699,7 @@ export default function DriverGeneratorIDE() {
                 <div className="w-20 h-20 bg-gradient-to-br from-[#3e3e3e] to-[#2d2d2d] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[#3e3e3e]">
                   <Cpu className="h-10 w-10 text-gray-500" />
                 </div>
-                <h3 className="text-white font-semibold mb-2 text-lg">No MCU Selected</h3>
+                <h3 className="text-white font-semibold mb-2 text-lg">No MCU/MPU Selected</h3>
                 <p className="text-gray-400 max-w-md mx-auto">Choose a microcontroller from the database to view detailed specifications and technical information</p>
               </div>
             )}
@@ -2904,13 +2904,13 @@ export default function DriverGeneratorIDE() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Terminal className="h-4 w-4 text-[#00ff41]" />
-              <span className="font-bold text-[#00ff41] terminal-text text-sm">DRIVER_GENERATOR.EXE</span>
+              <span className="font-bold text-[#00ff41] terminal-text text-sm">DRIVER_GENERATOR</span>
               <span className="text-gray-500 text-xs">[RUNNING]</span>
             </div>
             <div className="flex items-center gap-3 text-gray-400 text-xs font-mono">
-              <span className="cursor-pointer hover:text-[#00ff41] transition-colors">./new</span>
-              <span className="cursor-pointer hover:text-[#00ff41] transition-colors">./build</span>
-              <span className="cursor-pointer hover:text-[#00ff41] transition-colors">./help</span>
+              <span className="cursor-pointer hover:text-[#00ff41] transition-colors"></span>
+              <span className="cursor-pointer hover:text-[#00ff41] transition-colors"></span>
+              <span className="cursor-pointer hover:text-[#00ff41] transition-colors"></span>
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs font-mono">

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 5, "column": 0}, "map": {"version":3,"sources":["file:///home/avinav/Desktop/MCUZA%20SYS/Mcuza-Frontend/src/app/products/embedded-systems/intelligent-drivers-generator/generate-driver/layout.tsx"],"sourcesContent":["import Footer from '@/components/Footer';\nimport type { ReactNode } from 'react';\n\nexport default function GenerateDriverLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>\n        <div className=\"min-h-screen flex flex-col\">\n          {/* No Header here */}\n          <main className=\"flex-1\">\n            {children}\n          </main>\n          <Footer />\n        </div>\n      </body>\n    </html>\n  );\n}"],"names":[],"mappings":";;;;AAAA;;;AAGe,SAAS,qBAAqB,EAAE,QAAQ,EAA2B;IAChF,qBACE,8OAAC;QAAK,MAAK;kBACT,cAAA,8OAAC;sBACC,cAAA,8OAAC;gBAAI,WAAU;;kCAEb,8OAAC;wBAAK,WAAU;kCACb;;;;;;kCAEH,8OAAC,4HAAA,CAAA,UAAM;;;;;;;;;;;;;;;;;;;;;AAKjB","debugId":null}}]
+}
