@@ -1,6 +1,4 @@
-
 "use client";
-
 
 import { useState } from 'react';
 import { ChevronRight, ChevronDown, Settings, Cpu, Zap, HardDrive, Cog, FileText, Download, Play, Check, X, Search, Plus, Minus, RefreshCw, FolderOpen, File, Monitor, Layers, Code2, Terminal, GitBranch, BookOpen, AlertTriangle, Info, Power, CircuitBoard, Network, Radio, Truck, Usb, Globe, Music, Cable, Building, Bluetooth, Wifi, Smartphone, Microchip, Clock } from 'lucide-react';
@@ -17,6 +15,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
 export default function DriverGeneratorIDE() {
+  type PeripheralType = { name: string; category: string; description: string };
+  type PeripheralsMap = { [key: string]: PeripheralType[] };
   // Reset all selections and settings to initial state
   const handleReset = () => {
     setCurrentStep(0);
@@ -88,13 +88,12 @@ export default function DriverGeneratorIDE() {
   const [selectedProtocol, setSelectedProtocol] = useState('');
   const [selectedPeripheral, setSelectedPeripheral] = useState('');
   const [settings, setSettings] = useState({});
-  const [expandedSections, setExpandedSections] = useState({ mcu: true });
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({ mcu: true });
   const [searchTerm, setSearchTerm] = useState('');
   const [peripheralSearchTerm, setPeripheralSearchTerm] = useState('');
   const [visitedSteps, setVisitedSteps] = useState([0]); // Track visited steps
   const [highestAccessibleStep, setHighestAccessibleStep] = useState(0); // Track progression
   const [validationErrors, setValidationErrors] = useState([]); // Track validation errors
-  
   // Error messages for missing selections
   const [errorMessages, setErrorMessages] = useState({
     mcu: '',
@@ -119,9 +118,40 @@ export default function DriverGeneratorIDE() {
     customPrefix: '',
     licenseHeader: 'mit'
   });
-
   // Additional configuration state
-  const [additionalConfig, setAdditionalConfig] = useState({
+  const [additionalConfig, setAdditionalConfig] = useState<{ [key: string]: any } & {
+    customRequirements: string;
+    targetApplication: string;
+    operatingSystem: string;
+    rtosSupport: boolean;
+    bootloaderIntegration: boolean;
+    securityFeatures: boolean;
+    calibrationSupport: boolean;
+    diagnosticsEnabled: boolean;
+    firmwareVersion: string;
+    compilerToolchain: string;
+    buildSystem: string;
+    testFramework: string;
+    memoryConstraints: {
+      stackSize: string;
+      heapSize: string;
+      flashUsage: string;
+    };
+    performanceTargets: {
+      maxResponseTime: string;
+      throughput: string;
+      powerConsumption: string;
+    };
+    compliance: {
+      automotive: boolean;
+      medical: boolean;
+      aerospace: boolean;
+      industrial: boolean;
+    };
+    customDefines: string[];
+    includePaths: string[];
+    linkLibraries: string[];
+  }>({
     customRequirements: '',
     targetApplication: '',
     operatingSystem: '',
@@ -154,7 +184,13 @@ export default function DriverGeneratorIDE() {
     includePaths: [],
     linkLibraries: []
   });
-
+  // Peripheral selection state (must only be declared once, at the top)
+  type PeripheralSelection = { name: string; protocol: string; fullName: string; isProtocolOnly?: boolean };
+  const [selectedPeripherals, setSelectedPeripherals] = useState<PeripheralSelection[]>([]);
+  const [expandedProtocols, setExpandedProtocols] = useState<Record<string, boolean>>({});
+  // Peripheral selection error message state (for limits, etc)
+  const [errorMessage, setErrorMessage] = useState('');
+  // Remove duplicate useState for searchTerm in peripheral selection logic
   const workflowSteps = [
     { id: 0, name: 'MCU/MPU Selection', icon: <Cpu className="h-4 w-4" />, completed: false },
     { id: 1, name: 'Protocol/Bus Selection', icon: <Zap className="h-4 w-4" />, completed: false },
@@ -163,6 +199,7 @@ export default function DriverGeneratorIDE() {
     { id: 4, name: 'Additional Configuration', icon: <Cog className="h-4 w-4" />, completed: false },
     { id: 5, name: 'Overview & Generate', icon: <FileText className="h-4 w-4" />, completed: false }
   ];
+  // ...rest of the component code...
 
   const mcuFamilies = {
     'STM32': {
@@ -207,7 +244,7 @@ export default function DriverGeneratorIDE() {
     { name: 'QSPI', description: 'Quad Serial Peripheral Interface', frequency: 'Up to 104 MHz', icon: 'Microchip', category: 'Storage', popularity: 'Medium' }
   ];
 
-  const peripherals = {
+  const peripherals: PeripheralsMap = {
     'I2C': [
       { name: 'BME280', category: 'Environmental Sensor', description: 'Temperature, Pressure, Humidity' },
       { name: 'MPU6050', category: 'IMU Sensor', description: '6-axis Motion Tracking' },
@@ -226,7 +263,7 @@ export default function DriverGeneratorIDE() {
     ]
   };
 
-  const toggleSection = (section) => {
+  const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
@@ -235,27 +272,22 @@ export default function DriverGeneratorIDE() {
     if (!searchTerm) {
       return mcuFamilies;
     }
-
-    const filtered = {};
+    const filtered: { [key: string]: { series: { [key: string]: string[] } } } = {};
     const term = searchTerm.toLowerCase();
-
     Object.entries(mcuFamilies).forEach(([family, data]) => {
-      const matchingModels = {};
+      const matchingModels: { [key: string]: string[] } = {};
       let hasMatches = false;
-
-      Object.entries(data.series).forEach(([series, models]) => {
-        const filteredModels = models.filter(model => 
+      Object.entries((data as { series: { [key: string]: string[] } }).series).forEach(([series, models]) => {
+        const filteredModels = (models as string[]).filter((model: string) => 
           model.toLowerCase().includes(term) ||
           series.toLowerCase().includes(term) ||
           family.toLowerCase().includes(term)
         );
-
         if (filteredModels.length > 0) {
           matchingModels[series] = filteredModels;
           hasMatches = true;
         }
       });
-
       if (hasMatches) {
         filtered[family] = { series: matchingModels };
         // Auto-expand families with search matches
@@ -264,14 +296,13 @@ export default function DriverGeneratorIDE() {
         }
       }
     });
-
     return filtered;
   };
 
   // Get total count of matching MCUs
   const getSearchResultsCount = () => {
     const filtered = getFilteredMCUs();
-    return Object.values(filtered).reduce((total, family) => {
+    return Object.values(filtered).reduce((total: number, family: any) => {
       return total + Object.values(family.series).flat().length;
     }, 0);
   };
@@ -279,25 +310,22 @@ export default function DriverGeneratorIDE() {
   // Get all matching MCU names for search suggestions
   const getSearchSuggestions = () => {
     if (!searchTerm || searchTerm.length < 2) return [];
-    
-    const suggestions = [];
+    const suggestions: { model: string; series: string; family: string }[] = [];
     const term = searchTerm.toLowerCase();
-
     Object.entries(mcuFamilies).forEach(([family, data]) => {
-      Object.entries(data.series).forEach(([series, models]) => {
-        models.forEach(model => {
+      Object.entries((data as { series: { [key: string]: string[] } }).series).forEach(([series, models]) => {
+        (models as string[]).forEach((model: string) => {
           if (model.toLowerCase().includes(term)) {
             suggestions.push({ model, series, family });
           }
         });
       });
     });
-
     return suggestions.slice(0, 8); // Limit to 8 suggestions
   };
 
   // Helper function to get icon component
-  const getProtocolIcon = (iconName) => {
+  const getProtocolIcon = (iconName: string) => {
     const iconProps = { className: "h-4 w-4" };
     switch (iconName) {
       case 'Circuit': return <CircuitBoard {...iconProps} />;
@@ -320,7 +348,7 @@ export default function DriverGeneratorIDE() {
   };
 
   // Get category color scheme
-  const getCategoryColor = (category) => {
+  const getCategoryColor = (category: string) => {
     switch (category) {
       case 'Serial': return { bg: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/30', text: 'text-blue-400' };
       case 'Wireless': return { bg: 'from-purple-500/20 to-pink-500/20', border: 'border-purple-500/30', text: 'text-purple-400' };
@@ -363,7 +391,7 @@ export default function DriverGeneratorIDE() {
   };
 
   // Navigation logic functions
-  const updateProgressAndNavigate = (stepId) => {
+  const updateProgressAndNavigate = (stepId: number) => {
     // Validate required selections before navigating to certain steps
     if (stepId === 3) { // Driver Settings step
       if (!selectedMCU || !selectedProtocol || !selectedPeripheral) {
@@ -426,7 +454,7 @@ export default function DriverGeneratorIDE() {
     return maxStep;
   };
   
-  const isStepAccessible = (stepId) => {
+  const isStepAccessible = (stepId: number) => {
     // Always allow access to visited steps
     if (visitedSteps.includes(stepId)) {
       return true;
@@ -436,7 +464,7 @@ export default function DriverGeneratorIDE() {
     return stepId <= Math.max(highestAccessibleStep, calculateMaxAccessibleStep());
   };
   
-  const getStepStatus = (stepId) => {
+  const getStepStatus = (stepId: number) => {
     const isVisited = visitedSteps.includes(stepId);
     const isAccessible = isStepAccessible(stepId);
     const isActive = currentStep === stepId;
@@ -465,7 +493,7 @@ export default function DriverGeneratorIDE() {
           return false;
         });
         break;
-      case 5: isCompleted = selectedMCU && selectedProtocol && selectedPeripheral; break;
+  case 5: isCompleted = Boolean(selectedMCU && selectedProtocol && selectedPeripheral); break;
       default: isCompleted = false;
     }
     
@@ -926,7 +954,7 @@ export default function DriverGeneratorIDE() {
                     <div className="bg-gradient-to-br from-[#3e3e3e]/40 to-[#2d2d2d]/40 p-4 rounded-xl border border-[#3e3e3e]/50">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                          {getProtocolIcon(selected?.icon)}
+                          {getProtocolIcon(selected?.icon ?? '')}
                         </div>
                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Protocol Type</label>
                       </div>
@@ -991,7 +1019,7 @@ export default function DriverGeneratorIDE() {
   };
 
   // Get category color scheme for peripherals
-  const getPeripheralCategoryColor = (category) => {
+  const getPeripheralCategoryColor = (category: string) => {
     switch (category) {
       case 'Environmental Sensor': return { bg: 'from-green-500/20 to-emerald-500/20', border: 'border-green-500/30', text: 'text-green-400' };
       case 'IMU Sensor': return { bg: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/30', text: 'text-blue-400' };
@@ -1008,7 +1036,7 @@ export default function DriverGeneratorIDE() {
   };
 
   // Get peripheral icon based on category
-  const getPeripheralIcon = (category) => {
+  const getPeripheralIcon = (category: string) => {
     const iconProps = { className: "h-4 w-4" };
     switch (category) {
       case 'Environmental Sensor': return <Zap {...iconProps} />;
@@ -1024,318 +1052,655 @@ export default function DriverGeneratorIDE() {
       default: return <Microchip {...iconProps} />;
     }
   };
-
-  const renderPeripheralSelection = () => {
-    if (!selectedProtocol) {
-      return (
-        <div className="space-y-8">
-          {renderErrors()}
-          <div className="flex items-center gap-4 mb-8 pb-4 border-b border-[#3e3e3e]">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-lg flex items-center justify-center shadow-lg">
-              <HardDrive className="h-6 w-6 text-black" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-1 font-mono">peripheral_device_selection</h1>
-              <p className="text-gray-300 text-sm">Select the specific peripheral device for driver generation</p>
-            </div>
-          </div>
-
-          <div className="text-center py-16">
-            <div className="w-20 h-20 bg-gradient-to-br from-[#3e3e3e] to-[#2d2d2d] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[#3e3e3e]">
-              <AlertTriangle className="h-10 w-10 text-orange-400" />
-            </div>
-            <h3 className="text-white font-semibold mb-2 text-lg">No Protocol Selected</h3>
-            <p className="text-gray-400 max-w-md mx-auto">Please select a communication protocol first to view compatible peripheral devices</p>
-            <Button 
-              onClick={() => setCurrentStep(1)}
-              className="mt-6 bg-gradient-to-r from-[#00ff41] to-[#40e0d0] hover:from-[#00e038] hover:to-[#30d0c0] text-black font-mono font-bold"
-            >
-              <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
-              Go Back to Protocol Selection
-            </Button>
-          </div>
-        </div>
-      );
+const renderPeripheralSelection = () => {
+  // Peripheral devices database organized by communication protocols
+  const peripheralDatabase = {
+    'I2C': {
+      protocol: 'I2C (Inter-Integrated Circuit)',
+      description: '2-wire serial communication protocol',
+      devices: {
+        'Sensors': [
+          'BME280 - Environmental Sensor',
+          'MPU6050 - 6-Axis IMU',
+          'BMP180 - Pressure Sensor',
+          'DS3231 - RTC Module',
+          'ADXL345 - 3-Axis Accelerometer',
+          'HTU21D - Humidity Sensor',
+          'TCS34725 - Color Sensor',
+          'VL53L0X - ToF Distance Sensor'
+        ],
+        'Memory & Storage': [
+          'AT24C256 - EEPROM 256KB',
+          'AT24C32 - EEPROM 32KB',
+          '24LC512 - EEPROM 512KB',
+          'CAT24C32 - EEPROM 32KB'
+        ],
+        'Display': [
+          'SSD1306 - OLED 128x64',
+          'SH1106 - OLED 128x64',
+          'LCD1602 - 16x2 Character LCD',
+          'LCD2004 - 20x4 Character LCD'
+        ],
+        'IO Expanders': [
+          'PCF8574 - 8-bit IO Expander',
+          'MCP23017 - 16-bit IO Expander',
+          'PCA9685 - 16-Channel PWM'
+        ]
+      }
+    },
+    'SPI': {
+      protocol: 'SPI (Serial Peripheral Interface)',
+      description: '4-wire serial communication protocol',
+      devices: {
+        'Memory & Storage': [
+          'W25Q64 - 64Mbit Flash Memory',
+          'W25Q32 - 32Mbit Flash Memory',
+          'AT25DF641 - DataFlash 64Mbit',
+          'MX25L6405 - 64Mbit Flash',
+          'SD Card Module - Mass Storage'
+        ],
+        'Display': [
+          'ST7735 - 1.8" TFT LCD',
+          'ILI9341 - 2.4" TFT LCD',
+          'ST7789 - 2.0" TFT LCD',
+          'MAX7219 - 8x8 LED Matrix',
+          'Nokia 5110 - Monochrome LCD'
+        ],
+        'Wireless': [
+          'NRF24L01 - 2.4GHz Transceiver',
+          'ESP8266 - WiFi Module',
+          'CC1101 - Sub-1GHz RF',
+          'RFM95W - LoRa Module'
+        ],
+        'Sensors': [
+          'MAX31855 - Thermocouple Amplifier',
+          'MCP3008 - 8-Channel ADC',
+          'MCP4822 - Dual 12-bit DAC'
+        ]
+      }
+    },
+    'UART': {
+      protocol: 'UART (Universal Asynchronous Receiver-Transmitter)',
+      description: 'Asynchronous serial communication',
+      devices: {
+        'Wireless': [
+          'ESP32 - WiFi/Bluetooth Module',
+          'HC-05 - Bluetooth Classic',
+          'HC-06 - Bluetooth Classic',
+          'ESP8266 - WiFi Module',
+          'SIM800L - GSM/GPRS Module',
+          'SIM7600 - 4G LTE Module'
+        ],
+        'GPS & Navigation': [
+          'NEO-8M - GPS Module',
+          'NEO-6M - GPS Module',
+          'NEO-7M - GPS Module'
+        ],
+        'Sensors': [
+          'PMS5003 - Particulate Matter Sensor',
+          'MH-Z19B - CO2 Sensor',
+          'Nova SDS011 - Dust Sensor'
+        ],
+        'Communication': [
+          'RS485 Module - Industrial Communication',
+          'TTL to USB Converter',
+          'Bluetooth HC-12 - Long Range'
+        ]
+      }
+    },
+    'CAN': {
+      protocol: 'CAN (Controller Area Network)',
+      description: 'Automotive and industrial bus standard',
+      devices: {
+        'Transceivers': [
+          'MCP2515 - CAN Controller',
+          'TJA1050 - CAN Transceiver',
+          'SN65HVD230 - CAN Transceiver',
+          'MCP2551 - CAN Transceiver'
+        ],
+        'Modules': [
+          'CAN Bus Shield - Arduino Compatible',
+          'CANBED - CAN Development Board'
+        ]
+      }
+    },
+    'USB': {
+      protocol: 'USB (Universal Serial Bus)',
+      description: 'Universal connectivity standard',
+      devices: {
+        'Host Controllers': [
+          'MAX3421E - USB Host Controller',
+          'SL811HS - USB Host Controller'
+        ],
+        'Converters': [
+          'FT232RL - USB to UART',
+          'CH340G - USB to UART',
+          'CP2102 - USB to UART'
+        ],
+        'Storage': [
+          'USB Flash Drive Interface',
+          'USB Card Reader Module'
+        ]
+      }
+    },
+    'Ethernet': {
+      protocol: 'Ethernet',
+      description: 'Wired network communication',
+      devices: {
+        'Controllers': [
+          'W5500 - Ethernet Controller',
+          'ENC28J60 - Ethernet Controller',
+          'W5100 - Ethernet Controller'
+        ],
+        'Modules': [
+          'Ethernet Shield W5500',
+          'WIZnet W5500 Module',
+          'ENC28J60 Ethernet Module'
+        ]
+      }
     }
+  };
 
-    const categories = getPeripheralCategories();
-    const filteredPeripherals = getFilteredPeripherals();
+  // Constants for limits
+  const MAX_PERIPHERALS = 2;
+  const MAX_PROTOCOLS = 2;
+
+  // (Removed duplicate useState for errorMessage. State is managed at the top level only.)
+
+  // Show error message temporarily
+  const showError = (message: string) => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(''), 3000);
+  };
+
+  // Toggle protocol expansion
+  const toggleProtocol = (protocol: string) => {
+    setExpandedProtocols(prev => ({
+      ...prev,
+      [protocol.toLowerCase()]: !prev[protocol.toLowerCase()]
+    }));
+  };
+
+  // Add or remove protocol selection (without specific devices)
+  const toggleProtocolSelection = (protocol: string) => {
+    const isAlreadySelected = selectedPeripherals.some(p => p.protocol === protocol && p.isProtocolOnly);
     
-    return (
-      <div className="space-y-8">
-        {renderErrors()}
-        <div className="flex items-center gap-4 mb-8 pb-4 border-b border-[#3e3e3e]">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-lg flex items-center justify-center shadow-lg">
-            <HardDrive className="h-6 w-6 text-black" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-1 font-mono">peripheral_device_selection</h1>
-            <p className="text-gray-300 text-sm">Select the specific peripheral device for driver generation</p>
-          </div>
-        </div>
+    if (isAlreadySelected) {
+      // Remove protocol selection
+      setSelectedPeripherals(prev => 
+        prev.filter(p => !(p.protocol === protocol && p.isProtocolOnly))
+      );
+    } else {
+      // Check if we can add more protocols
+      const protocolOnlyCount = selectedPeripherals.filter(p => p.isProtocolOnly).length;
+      
+      if (protocolOnlyCount >= MAX_PROTOCOLS) {
+        showError(`Maximum ${MAX_PROTOCOLS} protocols can be selected`);
+        return;
+      }
 
-        {/* Protocol Context & Search */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <Zap className="h-3 w-3 text-blue-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Selected Protocol</span>
-            </div>
-            <p className="text-lg font-bold text-white font-mono">{selectedProtocol}</p>
-            <p className="text-gray-400 text-xs mt-1">Communication interface</p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <HardDrive className="h-3 w-3 text-green-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Devices</span>
-            </div>
-            <p className="text-lg font-bold text-white">{peripherals[selectedProtocol]?.length || 0}</p>
-            <p className="text-gray-400 text-xs mt-1">Compatible peripherals</p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <Layers className="h-3 w-3 text-purple-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Categories</span>
-            </div>
-            <p className="text-lg font-bold text-white">{categories.length}</p>
-            <p className="text-gray-400 text-xs mt-1">Device types</p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-[#252526] to-[#1e1e1e] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <Search className="h-3 w-3 text-orange-400" />
-              </div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Filtered Results</span>
-            </div>
-            <p className="text-lg font-bold text-white">{filteredPeripherals.length}</p>
-            <p className="text-gray-400 text-xs mt-1">Matching devices</p>
-          </div>
-        </div>
+      // Add protocol selection
+      setSelectedPeripherals(prev => [...prev, { 
+        name: protocol, 
+        protocol: protocol, 
+        fullName: `${protocol} Protocol`,
+        isProtocolOnly: true
+      }]);
+    }
+  };
 
-        {/* Search Bar */}
-        <Card className="border border-[#3e3e3e] bg-gradient-to-br from-[#252526] to-[#1e1e1e] shadow-xl">
-          <CardHeader className="pb-4">
+  // Add or remove peripheral from selection
+  const togglePeripheralSelection = (peripheral: string, protocol: string) => {
+    const peripheralWithProtocol = `${peripheral} (${protocol})`;
+    const isAlreadySelected = selectedPeripherals.some(p => p.name === peripheral && p.protocol === protocol && !p.isProtocolOnly);
+    
+    if (isAlreadySelected) {
+      // Remove peripheral
+      setSelectedPeripherals(prev => 
+        prev.filter(p => !(p.name === peripheral && p.protocol === protocol && !p.isProtocolOnly))
+      );
+    } else {
+      // Check if we can add more peripherals
+      const peripheralCount = selectedPeripherals.filter(p => !p.isProtocolOnly).length;
+      
+      if (peripheralCount >= MAX_PERIPHERALS) {
+        showError(`Maximum ${MAX_PERIPHERALS} devices can be selected`);
+        return;
+      }
+
+      // Add peripheral
+      setSelectedPeripherals(prev => [...prev, { 
+        name: peripheral, 
+        protocol, 
+        fullName: peripheralWithProtocol,
+        isProtocolOnly: false
+      }]);
+    }
+  };
+
+  // Check if peripheral is selected
+  const isPeripheralSelected = (peripheral: string, protocol: string) => {
+    return selectedPeripherals.some(p => p.name === peripheral && p.protocol === protocol && !p.isProtocolOnly);
+  };
+
+  // Check if protocol is selected
+  const isProtocolSelected = (protocol: string) => {
+    return selectedPeripherals.some(p => p.protocol === protocol && p.isProtocolOnly);
+  };
+
+  // Get selection counts
+  const getSelectionCounts = () => {
+    const peripheralCount = selectedPeripherals.filter(p => !p.isProtocolOnly).length;
+    const protocolCount = selectedPeripherals.filter(p => p.isProtocolOnly).length;
+    return { peripheralCount, protocolCount };
+  };
+
+  // Filter peripherals based on search term
+  const getFilteredPeripherals = () => {
+    if (!searchTerm) return peripheralDatabase;
+    
+    type FilteredDevices = { [key: string]: string[] };
+    type Filtered = { [key: string]: { protocol: string; description: string; devices: FilteredDevices } };
+    const filtered: Filtered = {};
+    Object.entries(peripheralDatabase).forEach(([protocol, data]) => {
+      const filteredDevices: FilteredDevices = {};
+      let hasMatchingDevices = false;
+      Object.entries((data as { devices: { [key: string]: string[] } }).devices).forEach(([category, devices]) => {
+        const matchingDevices = (devices as string[]).filter((device: string) => 
+          device.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          protocol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        if (matchingDevices.length > 0) {
+          filteredDevices[category] = matchingDevices;
+          hasMatchingDevices = true;
+        }
+      });
+      if (hasMatchingDevices) {
+        filtered[protocol] = {
+          ...(data as { protocol: string; description: string }),
+          devices: filteredDevices
+        };
+      }
+    });
+    return filtered;
+  };
+
+  // Get search results count
+  const getSearchResultsCount = () => {
+    const filtered = getFilteredPeripherals();
+    let count = 0;
+    Object.values(filtered).forEach((protocol: { devices: { [key: string]: string[] } }) => {
+      Object.values(protocol.devices).forEach((devices: string[]) => {
+        count += devices.length;
+      });
+    });
+    return count;
+  };
+
+  // Clear all selections
+  const clearAllSelections = () => {
+    setSelectedPeripherals([]);
+    setErrorMessage('');
+  };
+
+  // Remove specific peripheral or protocol
+  const removeSelection = (item: PeripheralSelection) => {
+    setSelectedPeripherals(prev => 
+      prev.filter(p => !(
+        p.name === item.name && 
+        p.protocol === item.protocol && 
+        p.isProtocolOnly === item.isProtocolOnly
+      ))
+    );
+  };
+
+  const { peripheralCount, protocolCount } = getSelectionCounts();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-6 pb-3 border-b border-[#3e3e3e]">
+        <div className="w-10 h-10 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-lg flex items-center justify-center shadow-lg">
+          <Layers className="h-5 w-5 text-black" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-white mb-1">Peripheral Device Selection</h1>
+          <p className="text-gray-300 text-sm">Configure communication interfaces and peripheral devices</p>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {errorMessage && (
+        <Card className="border border-red-500/50 bg-gradient-to-br from-red-950/20 to-red-900/10 shadow-xl">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+              </div>
+              <div>
+                <p className="text-red-300 font-medium">{errorMessage}</p>
+                <p className="text-red-400/70 text-sm">
+                  Limits: {MAX_PERIPHERALS} devices, {MAX_PROTOCOLS} protocols
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+        {/* Peripheral Browser */}
+        <Card className="xl:col-span-3 border border-[#3e3e3e] bg-gradient-to-br from-[#252526] to-[#1e1e1e] shadow-xl">
+          <CardHeader className="pb-4 border-b border-[#3e3e3e]">
             <CardTitle className="text-white flex items-center gap-3 text-lg font-semibold">
               <div className="w-8 h-8 bg-[#00ff41]/20 rounded-lg flex items-center justify-center">
                 <Search className="h-4 w-4 text-[#00ff41]" />
               </div>
-              Peripheral Search
+              Peripheral Database
             </CardTitle>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search peripherals by name, category, or description..."
-                value={peripheralSearchTerm}
-                onChange={(e) => setPeripheralSearchTerm(e.target.value)}
+                placeholder="Search peripherals, protocols, or categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 bg-[#1e1e1e] border-[#3e3e3e] text-white placeholder-gray-400 focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41]/20"
               />
             </div>
-            {peripheralSearchTerm && (
-              <div className="flex items-center gap-2 text-xs mt-2">
-                <Search className="h-3 w-3 text-[#00ff41]" />
-                <span className="text-[#00ff41] font-mono">
-                  {filteredPeripherals.length} results for "{peripheralSearchTerm}"
+            
+            {/* Selection Limits Info */}
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span className="text-gray-400">
+                  Devices: {peripheralCount}/{MAX_PERIPHERALS}
                 </span>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={() => setPeripheralSearchTerm('')}
-                  className="ml-auto h-auto p-1 text-gray-400 hover:text-white hover:bg-[#3e3e3e]"
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span className="text-gray-400">
+                  Protocols: {protocolCount}/{MAX_PROTOCOLS}
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[40rem] px-4 py-2">
+              {/* Search Results Counter */}
+              {searchTerm && (
+                <div className="px-4 py-2 bg-[#3e3e3e]/20 border-b border-[#3e3e3e] mb-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Search className="h-3 w-3 text-[#00ff41]" />
+                    <span className="text-[#00ff41] font-mono">
+                      {getSearchResultsCount()} devices found for "{searchTerm}"
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                {Object.entries(getFilteredPeripherals()).map(([protocol, data]) => (
+                  <div key={protocol} className="border border-[#3e3e3e]/50 rounded-lg overflow-hidden">
+                    {/* Protocol Header */}
+                    <div className="bg-gradient-to-r from-[#2d2d2d] to-[#252526]">
+                      <div
+                        className="flex items-center gap-4 cursor-pointer hover:bg-[#3e3e3e]/30 p-4 transition-all group"
+                        onClick={() => toggleProtocol(protocol)}
+                      >
+                        {expandedProtocols[protocol.toLowerCase()] ? 
+                          <ChevronDown className="h-5 w-5 text-[#00ff41] group-hover:text-[#40e0d0]" /> : 
+                          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#00ff41]" />
+                        }
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                          <Cpu className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-white font-bold text-lg group-hover:text-[#00ff41] transition-colors">{data.protocol}</h3>
+                          <p className="text-gray-400 text-sm">{data.description}</p>
+                        </div>
+                        <Badge className="bg-[#3e3e3e] text-gray-300 text-xs">
+                          {Object.values(data.devices).flat().length} devices
+                        </Badge>
+                      </div>
+                      
+                      {/* Protocol Selection Button */}
+                      <div className="px-4 pb-4">
+                        <button
+                          onClick={() => toggleProtocolSelection(protocol)}
+                          disabled={!isProtocolSelected(protocol) && protocolCount >= MAX_PROTOCOLS}
+                          className={`w-full p-3 rounded-lg transition-all flex items-center justify-center gap-2 text-sm font-medium ${
+                            isProtocolSelected(protocol)
+                              ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/10 border border-green-500/50 text-green-400' 
+                              : protocolCount >= MAX_PROTOCOLS
+                                ? 'bg-[#3e3e3e]/20 border border-[#3e3e3e]/30 text-gray-500 cursor-not-allowed'
+                                : 'bg-[#3e3e3e]/40 border border-[#3e3e3e]/50 text-gray-300 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-400'
+                          }`}
+                        >
+                          {isProtocolSelected(protocol) ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Protocol Selected
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4" />
+                              Select Protocol Only
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Protocol Content */}
+                    {expandedProtocols[protocol.toLowerCase()] && (
+                      <div className="bg-[#1e1e1e]/50 p-4">
+                        {Object.entries(data.devices).map(([category, devices]) => (
+                          <div key={category} className="mb-6 last:mb-0">
+                            {/* Category Header */}
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                                <FolderOpen className="h-3 w-3 text-white" />
+                              </div>
+                              <h4 className="text-gray-200 font-semibold text-sm">{category}</h4>
+                              <div className="h-px bg-gradient-to-r from-gray-600 to-transparent flex-1 ml-2" />
+                              <Badge className="bg-[#3e3e3e]/50 text-gray-400 text-xs">
+                                {devices.length}
+                              </Badge>
+                            </div>
+                            
+                            {/* Device List */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                              {devices.map((device) => {
+                                const isSelected = isPeripheralSelected(device, protocol);
+                                const isDisabled = !isSelected && peripheralCount >= MAX_PERIPHERALS;
+                                
+                                return (
+                                  <div
+                                    key={device}
+                                    className={`cursor-pointer p-3 rounded-lg transition-all flex items-center gap-3 group border ${
+                                      isSelected
+                                        ? 'bg-gradient-to-r from-[#00ff41]/20 to-[#40e0d0]/10 border-[#00ff41]/50 text-[#00ff41]' 
+                                        : isDisabled
+                                          ? 'border-[#3e3e3e]/20 text-gray-500 cursor-not-allowed bg-[#2a2a2a]/20'
+                                          : 'hover:bg-[#3e3e3e]/30 border-[#3e3e3e]/30 text-gray-300 hover:text-white hover:border-[#00ff41]/30'
+                                    }`}
+                                    onClick={() => !isDisabled && togglePeripheralSelection(device, protocol)}
+                                  >
+                                    <div className={`w-5 h-5 rounded flex items-center justify-center ${
+                                      isSelected 
+                                        ? 'bg-[#00ff41]' 
+                                        : isDisabled
+                                          ? 'bg-[#3e3e3e]/30'
+                                          : 'bg-[#3e3e3e] group-hover:bg-[#00ff41]/20'
+                                    }`}>
+                                      {isSelected ? (
+                                        <Check className="h-3 w-3 text-black" />
+                                      ) : (
+                                        <Plus className={`h-3 w-3 ${isDisabled ? 'text-gray-600' : 'text-gray-400 group-hover:text-[#00ff41]'}`} />
+                                      )}
+                                    </div>
+                                    <span className="flex-1 text-sm font-medium whitespace-normal break-words">{device}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Selected Items Panel */}
+        <Card className="xl:col-span-2 border border-[#3e3e3e] bg-gradient-to-br from-[#252526] to-[#1e1e1e] shadow-xl">
+          <CardHeader className="pb-4 border-b border-[#3e3e3e]">
+            <CardTitle className="text-white flex items-center gap-3 text-lg font-semibold">
+              <div className="w-8 h-8 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-lg flex items-center justify-center">
+                <Monitor className="h-4 w-4 text-black" />
+              </div>
+              Selected Items
+            </CardTitle>
+            {selectedPeripherals.length > 0 && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-blue-500/20 text-blue-300 text-xs border border-blue-500/30">
+                    {peripheralCount} devices
+                  </Badge>
+                  <Badge className="bg-green-500/20 text-green-300 text-xs border border-green-500/30">
+                    {protocolCount} protocols
+                  </Badge>
+                </div>
+                <button
+                  onClick={clearAllSelections}
+                  className="text-xs text-gray-400 hover:text-red-400 transition-colors"
                 >
-                  <X className="h-3 w-3" />
-                </Button>
+                  Clear all
+                </button>
               </div>
             )}
           </CardHeader>
-        </Card>
-
-        {/* Category Sections */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-4 h-4 bg-[#00ff41]/20 rounded flex items-center justify-center">
-              <Layers className="h-2 w-2 text-[#00ff41]" />
-            </div>
-            <h3 className="text-lg font-semibold text-white font-mono">Browse by Category</h3>
-            <Badge className="bg-[#00ff41]/20 text-[#00ff41] border border-[#00ff41]/30 font-mono text-xs ml-auto">
-              {selectedProtocol} COMPATIBLE
-            </Badge>
-          </div>
-          
-          {categories.map(category => {
-            const categoryDevices = filteredPeripherals.filter(p => p.category === category);
-            const colors = getPeripheralCategoryColor(category);
-            
-            if (categoryDevices.length === 0) return null;
-            
-            return (
-              <div key={category} className="space-y-4">
-                {/* Category Header */}
-                <div className={`flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r ${colors.bg} border ${colors.border}`}>
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${colors.bg} border ${colors.border} flex items-center justify-center`}>
-                    {getPeripheralIcon(category)}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className={`font-semibold ${colors.text} font-mono text-lg`}>{category}</h4>
-                    <p className="text-xs text-gray-400">{categoryDevices.length} device{categoryDevices.length !== 1 ? 's' : ''} available</p>
-                  </div>
-                  <Badge className={`${colors.bg} ${colors.text} border ${colors.border} font-mono text-xs`}>
-                    {category.toUpperCase().replace(' ', '_')}
-                  </Badge>
-                </div>
-                
-                {/* Devices in Category */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 ml-4">
-                  {categoryDevices.map((device) => {
-                    const isSelected = selectedPeripheral === device.name;
-                    
-                    return (
-                      <Card
-                        key={device.name}
-                        className={`border cursor-pointer transition-all duration-200 hover:shadow-xl group ${
-                          isSelected
-                            ? `border-[#00ff41] bg-gradient-to-br from-[#00ff41]/10 to-[#40e0d0]/5 shadow-lg ring-1 ring-[#00ff41]/20`
-                            : 'border-[#3e3e3e] bg-gradient-to-br from-[#252526] to-[#1e1e1e] hover:border-[#00ff41]/50 hover:shadow-lg'
-                        }`}
-                        onClick={() => {
-                          setSelectedPeripheral(device.name);
-                          clearErrors();
-                        }}
-                      >
-                        <CardContent className="p-5">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                                isSelected 
-                                  ? 'bg-gradient-to-br from-[#00ff41] to-[#40e0d0] shadow-lg' 
-                                  : `bg-gradient-to-br ${colors.bg} group-hover:scale-110`
-                              }`}>
-                                <div className={isSelected ? 'text-black' : colors.text}>
-                                  {getPeripheralIcon(device.category)}
-                                </div>
-                              </div>
-                              <div>
-                                <h3 className={`font-bold text-lg font-mono transition-colors ${
-                                  isSelected ? 'text-[#00ff41]' : 'text-white group-hover:text-[#00ff41]'
-                                }`}>
-                                  {device.name}
-                                </h3>
-                                <Badge className={`text-xs px-2 py-1 mt-1 ${colors.bg} ${colors.text} border ${colors.border}`}>
-                                  {device.category}
-                                </Badge>
-                              </div>
-                            </div>
-                            
-                            {isSelected && (
-                              <div className="w-6 h-6 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-full flex items-center justify-center shadow-lg">
-                                <Check className="h-3 w-3 text-black font-bold" />
-                              </div>
-                            )}
-                          </div>
-                          
-                          <p className="text-gray-300 text-sm mb-4 leading-relaxed">{device.description}</p>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Zap className="h-3 w-3 text-[#00ff41]" />
-                              <span className="text-xs text-gray-400 font-mono">PROTOCOL</span>
-                            </div>
-                            <Badge className={`bg-gradient-to-r from-[#00ff41]/20 to-[#40e0d0]/10 text-[#00ff41] border border-[#00ff41]/30 font-mono text-xs px-3 py-1`}>
-                              {selectedProtocol}
+          <CardContent className="p-4">
+            {selectedPeripherals.length > 0 ? (
+              <ScrollArea className="h-[36rem]">
+                <div className="space-y-3">
+                  {selectedPeripherals.map((item, index) => (
+                    <div
+                      key={`${item.protocol}-${item.name}-${index}-${item.isProtocolOnly}`}
+                      className={`p-4 rounded-xl border group hover:border-[#00ff41]/30 transition-all ${
+                        item.isProtocolOnly 
+                          ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/5 border-green-500/20'
+                          : 'bg-gradient-to-r from-[#3e3e3e]/40 to-[#2d2d2d]/40 border-[#3e3e3e]/50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 mt-0.5 ${
+                          item.isProtocolOnly 
+                            ? 'bg-gradient-to-br from-green-500 to-emerald-500'
+                            : 'bg-gradient-to-br from-[#00ff41] to-[#40e0d0]'
+                        }`}>
+                          {item.isProtocolOnly ? (
+                            <Network className="h-4 w-4 text-white" />
+                          ) : (
+                            <Cpu className="h-4 w-4 text-black" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-semibold text-sm leading-tight mb-1 break-words">
+                            {item.isProtocolOnly ? item.protocol : item.name}
+                          </h4>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className={`text-xs border ${
+                              item.isProtocolOnly
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : 'bg-[#00ff41]/20 text-[#00ff41] border-[#00ff41]/30'
+                            }`}>
+                              {item.isProtocolOnly ? 'Protocol Only' : item.protocol}
                             </Badge>
                           </div>
-                          
-                          {/* Selection Indicator */}
-                          {isSelected && (
-                            <div className="mt-4 pt-4 border-t border-[#00ff41]/20">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#00ff41] animate-pulse" />
-                                <span className="text-xs text-[#00ff41] font-mono font-semibold">PERIPHERAL_SELECTED</span>
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                          <p className="text-gray-400 text-xs">
+                            {item.isProtocolOnly 
+                              ? `Protocol interface for ${item.protocol} communication`
+                              : `Communication via ${item.protocol} protocol`
+                            }
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => removeSelection(item)}
+                          className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </ScrollArea>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gradient-to-br from-[#3e3e3e] to-[#2d2d2d] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[#3e3e3e]">
+                  <Layers className="h-10 w-10 text-gray-500" />
+                </div>
+                <h3 className="text-white font-semibold mb-2 text-lg">No Items Selected</h3>
+                <p className="text-gray-400 max-w-md mx-auto text-sm">
+                  Select up to {MAX_PERIPHERALS} devices or {MAX_PROTOCOLS} protocols to configure your embedded system
+                </p>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Selected Peripheral Info Panel */}
-        {selectedPeripheral && (
-          <Card className="border border-[#00ff41]/30 bg-gradient-to-br from-[#00ff41]/5 to-[#40e0d0]/5 shadow-xl">
-            <CardHeader className="pb-4 border-b border-[#00ff41]/20">
-              <CardTitle className="text-white flex items-center gap-3 text-lg font-semibold font-mono">
-                <div className="w-8 h-8 bg-gradient-to-br from-[#00ff41] to-[#40e0d0] rounded-lg flex items-center justify-center">
-                  <Check className="h-4 w-4 text-black" />
-                </div>
-                Selected Peripheral: {selectedPeripheral}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {(() => {
-                const selected = (peripherals[selectedProtocol] || []).find(p => p.name === selectedPeripheral);
-                if (!selected) return null;
-                
-                const colors = getPeripheralCategoryColor(selected.category);
-                
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gradient-to-br from-[#3e3e3e]/40 to-[#2d2d2d]/40 p-4 rounded-xl border border-[#3e3e3e]/50">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                          {getPeripheralIcon(selected.category)}
-                        </div>
-                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Device Name</label>
-                      </div>
-                      <p className="text-white font-bold text-lg font-mono">{selected.name}</p>
-                      <p className="text-gray-400 text-xs mt-1">{selected.category}</p>
-                    </div>
-                    
-                    <div className="bg-gradient-to-br from-[#3e3e3e]/40 to-[#2d2d2d]/40 p-4 rounded-xl border border-[#3e3e3e]/50">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center">
-                          <Zap className="h-3 w-3 text-green-400" />
-                        </div>
-                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Protocol</label>
-                      </div>
-                      <p className="text-white font-bold text-lg font-mono">{selectedProtocol}</p>
-                      <p className="text-gray-400 text-xs mt-1">Communication interface</p>
-                    </div>
-                    
-                    <div className="bg-gradient-to-br from-[#3e3e3e]/40 to-[#2d2d2d]/40 p-4 rounded-xl border border-[#3e3e3e]/50">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                          <Info className="h-3 w-3 text-purple-400" />
-                        </div>
-                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</label>
-                      </div>
-                      <p className="text-white font-bold text-sm font-mono leading-relaxed">{selected.description}</p>
-                      <p className="text-gray-400 text-xs mt-1">Device functionality</p>
-                    </div>
-                  </div>
-                );
-              })()} 
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
-    );
-  };
 
+      {/* Configuration Summary */}
+      {selectedPeripherals.length > 0 && (
+        <Card className="border border-[#3e3e3e] bg-gradient-to-br from-[#252526] to-[#1e1e1e] shadow-xl">
+          <CardHeader className="pb-4 border-b border-[#3e3e3e]">
+            <CardTitle className="text-white flex items-center gap-3 text-lg font-semibold">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Settings className="h-4 w-4 text-white" />
+              </div>
+              Configuration Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 p-4 rounded-xl border border-blue-500/30 text-center">
+                <div className="text-2xl font-bold text-blue-400 mb-1">{peripheralCount}</div>
+                <div className="text-xs text-blue-300 font-medium">Devices</div>
+                <div className="text-xs text-gray-500">Max: {MAX_PERIPHERALS}</div>
+              </div>
+              <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 p-4 rounded-xl border border-green-500/30 text-center">
+                <div className="text-2xl font-bold text-green-400 mb-1">{protocolCount}</div>
+                <div className="text-xs text-green-300 font-medium">Protocols</div>
+                <div className="text-xs text-gray-500">Max: {MAX_PROTOCOLS}</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 p-4 rounded-xl border border-purple-500/30 text-center">
+                <div className="text-2xl font-bold text-purple-400 mb-1">{selectedPeripherals.length}</div>
+                <div className="text-xs text-purple-300 font-medium">Total Items</div>
+                <div className="text-xs text-gray-500">Selected</div>
+              </div>
+              <div className="bg-gradient-to-br from-[#00ff41]/20 to-[#40e0d0]/10 p-4 rounded-xl border border-[#00ff41]/30 text-center">
+                <div className="text-2xl font-bold text-[#00ff41] mb-1">
+                  {Object.keys(selectedPeripherals.reduce((acc, item) => {
+                  (acc as { [key: string]: boolean })[item.protocol] = true;
+                    return acc;
+                  }, {})).length}
+                </div>
+                <div className="text-xs text-[#40e0d0] font-medium">Unique Protocols</div>
+                <div className="text-xs text-gray-500">In Use</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};  
   // Update driver settings
-  const updateDriverSetting = (key, value) => {
+  const updateDriverSetting = (key: string, value: any) => {
     setDriverSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -1781,7 +2146,7 @@ export default function DriverGeneratorIDE() {
 
 
   // Update additional config
-  const updateAdditionalConfig = (key, value) => {
+  const updateAdditionalConfig = (key: string, value: any) => {
     if (key.includes('.')) {
       const [parent, child] = key.split('.');
       setAdditionalConfig(prev => ({
@@ -1797,19 +2162,19 @@ export default function DriverGeneratorIDE() {
   };
 
   // Add/remove custom items
-  const addCustomItem = (type, item) => {
+  const addCustomItem = (type: string, item: string) => {
     if (item.trim()) {
       setAdditionalConfig(prev => ({
         ...prev,
-        [type]: [...prev[type], item.trim()]
+    [type]: [...(prev[type] as string[]), item.trim()]
       }));
     }
   };
 
-  const removeCustomItem = (type, index) => {
+  const removeCustomItem = (type: string, index: number) => {
     setAdditionalConfig(prev => ({
       ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
+  [type]: (prev[type] as string[]).filter((_: string, i: number) => i !== index)
     }));
   };
 
@@ -2925,13 +3290,13 @@ export default function DriverGeneratorIDE() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Terminal className="h-4 w-4 text-[#00ff41]" />
-              <span className="font-bold text-[#00ff41] terminal-text text-sm">DRIVER_GENERATOR</span>
+              <span className="font-bold text-[#00ff41] terminal-text text-sm">Mcuza</span>
               <span className="text-gray-500 text-xs">[RUNNING]</span>
             </div>
             <div className="flex items-center gap-3 text-gray-400 text-xs font-mono">
-              <span className="cursor-pointer hover:text-[#00ff41] transition-colors"></span>
-              <span className="cursor-pointer hover:text-[#00ff41] transition-colors"></span>
-              <span className="cursor-pointer hover:text-[#00ff41] transition-colors"></span>
+              <span className="cursor-pointer hover:text-[#00ff41] transition-colors">Dashboard</span>
+              <span className="cursor-pointer hover:text-[#00ff41] transition-colors">Tools</span>
+              <span className="cursor-pointer hover:text-[#00ff41] transition-colors">Profiles</span>
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs font-mono">
@@ -2953,7 +3318,7 @@ export default function DriverGeneratorIDE() {
           <div className="bg-[#2d2d2d] border-b border-[#3e3e3e] px-3 py-1.5">
             <div className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4 text-[#00ff41]" />
-              <span className="text-sm font-bold text-[#00ff41] font-mono">WIZARD/</span>
+              <span className="text-sm font-bold text-[#00ff41] font-mono">DRIVER GENERATOR</span>
             </div>
           </div>
 

@@ -55,23 +55,23 @@ const Footer = () => {
             
             {/* Modules */}
             <div>
-              <div className="text-[#40e0d0] mb-3 font-bold">MODULES/</div>
+              <div className="text-[#40e0d0] mb-3 font-bold">Products</div>
               <div className="space-y-2">
                 <Link href="/products/embedded-systems" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                   <Code2 className="h-3 w-3" />
-                  <span>embedded_systems.so</span>
+                  <span>embedded_systems</span>
                 </Link>
                 <Link href="/products/edge-ai" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                   <Database className="h-3 w-3" />
-                  <span>edge_ai.dll</span>
+                  <span>edge_ai</span>
                 </Link>
                 <Link href="/products/fpga" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                   <Cpu className="h-3 w-3" />
-                  <span>fpga_workflows.bin</span>
+                  <span>fpga_workflows</span>
                 </Link>
                 <Link href="/rapid-prototyping" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                   <Command className="h-3 w-3" />
-                  <span>rapid_prototype.exe</span>
+                  <span>rapid_prototype</span>
                 </Link>
               </div>
             </div>
@@ -146,7 +146,7 @@ const Footer = () => {
           <span>BUILD: stable</span>
           <span>ARCH: x64</span>
           <span>PLATFORM: web</span>
-          <span>💚 Electronics Community</span>
+          <span>Electronics Community</span>
         </div>
       </div>
     </>
